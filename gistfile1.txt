@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>การโคจรของดาวเคราะห์รอบดวงอาทิตย์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e27; --panel:#131a3a; --panel2:#171f47; --text:#eef1fb; --text2:#9aa3c7;
+  --border:rgba(255,255,255,.08); --accent:#ffd166;
+  --good:#4be3b0; --warn:#ffd166; --bad:#ff6b6b;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0a0e27; --panel:#131a3a; } }
+:root[data-theme="dark"]{ --bg:#0a0e27; --panel:#131a3a; }
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{
+  margin:0; min-height:100%; background:radial-gradient(ellipse at 50% -10%,#141b47,var(--bg) 60%);
+  color:var(--text); font-family:'Sarabun',system-ui,'Noto Sans Thai',sans-serif;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+}
+.wrap{max-width:1040px;margin:0 auto;padding:30px 20px 50px;}
+.hero h1{font-family:'Kanit',system-ui,sans-serif;font-weight:600;font-size:clamp(22px,4vw,32px);margin:0 0 12px;}
+.hero .sub{color:var(--text2);line-height:1.8;max-width:72ch;margin:0 0 28px;font-size:14.5px;}
+.layout{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;}
+.stage{flex:1 1 460px;min-width:290px;}
+.status{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13.5px;font-weight:500;margin-bottom:12px;background:var(--panel);border:1px solid var(--border);min-height:14px;}
+.status.good{color:var(--good);border-color:rgba(75,227,176,.35);}
+.status.warn{color:var(--warn);border-color:rgba(255,209,102,.35);}
+.status.bad{color:var(--bad);border-color:rgba(255,107,107,.35);}
+.status.pause{color:var(--text2);}
+.canvasBox{position:relative;background:linear-gradient(180deg,#0c1130,#080b20);border-radius:16px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1/1;width:100%;}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
+.camCtrl{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px;}
+.camCtrl button{width:32px;height:32px;padding:0;border-radius:8px;background:rgba(19,26,58,.75);border:1px solid var(--border);color:var(--text);font-size:16px;line-height:1;flex:none;}
+.camHint{font-size:12px;color:var(--text2);margin:8px 0 0;}
+.hud{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.chip{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 14px;flex:1 1 130px;}
+.chip span{display:block;color:var(--text2);font-size:12px;margin-bottom:3px;}
+.chip b{font-family:'Kanit',sans-serif;font-size:16px;font-weight:500;}
+.legend{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;font-size:13px;color:var(--text2);}
+.legend span{display:flex;align-items:center;gap:6px;}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block;}
+.controls{flex:0 1 300px;min-width:260px;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.field{margin-bottom:18px;}
+.field label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;color:var(--text2);margin-bottom:8px;}
+.field label b{color:var(--text);font-family:'Kanit',sans-serif;font-weight:500;white-space:nowrap;}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--border));outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #0a0e27;}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #0a0e27;}
+input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:4px;}
+.hint{font-size:12.5px;margin:8px 0 0;color:var(--text2);line-height:1.6;}
+.hint.good{color:var(--good);}.hint.warn{color:var(--warn);}.hint.bad{color:var(--bad);}
+.buttons{display:flex;gap:10px;margin-top:4px;}
+button{flex:1;padding:11px 10px;border-radius:10px;border:1px solid var(--border);background:var(--accent);color:#241900;font-weight:600;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif;}
+button.ghost{background:transparent;color:var(--text);}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.callout{margin-top:30px;padding:18px 22px;background:var(--panel2);border-left:3px solid var(--accent);border-radius:4px 12px 12px 4px;color:var(--text);line-height:1.8;font-size:15px;max-width:78ch;}
+@media (max-width:720px){.layout{flex-direction:column;}.controls{flex-basis:auto;width:100%;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>การโคจรของดาวเคราะห์รอบดวงอาทิตย์</h1>
+    <p class="sub">แรงโน้มถ่วงจากดวงอาทิตย์ทำหน้าที่เป็นแรงสู่ศูนย์กลาง คอยดึงดาวเคราะห์ให้เปลี่ยนทิศทางอยู่ตลอดเวลา แทนที่จะเคลื่อนที่เป็นเส้นตรงออกไปในอวกาศ ตามกฎแรงโน้มถ่วงสากลของนิวตัน F = G·M·m / r² — ยิ่งดาวเคราะห์อยู่ใกล้ดวงอาทิตย์ แรงจะยิ่งมาก และยิ่งอยู่ไกล แรงจะยิ่งน้อยลง</p>
+  </header>
+  <div class="layout">
+    <section class="stage">
+      <div id="status" class="status" aria-live="polite"></div>
+      <div class="canvasBox"><canvas id="sim"></canvas>
+        <div class="camCtrl">
+          <button id="zoomIn" aria-label="ซูมเข้า">+</button>
+          <button id="zoomOut" aria-label="ซูมออก">−</button>
+          <button id="zoomReset" aria-label="รีเซ็ตมุมมอง">⊙</button>
+        </div>
+      </div>
+      <p class="camHint">ลากบนภาพเพื่อเลื่อนมุมมอง · ปุ่ม +/− หรือเลื่อนล้อเมาส์เพื่อซูม</p>
+      <div class="hud">
+        <div class="chip"><span>ระยะห่างจากดวงอาทิตย์</span><b id="hudDist">–</b></div>
+        <div class="chip"><span>ความเร็ว</span><b id="hudSpeed">–</b></div>
+        <div class="chip"><span>แรงโน้มถ่วง</span><b id="hudForce">–</b></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#ff6b6b"></i>แรงโน้มถ่วง (ชี้เข้าหาดวงอาทิตย์)</span>
+        <span><i style="background:#4be3b0"></i>ความเร็ว (ทิศทางการเคลื่อนที่)</span>
+      </div>
+    </section>
+    <aside class="controls">
+      <div class="field">
+        <label for="msun">มวลของดวงอาทิตย์ <b id="msunV">900</b></label>
+        <input type="range" id="msun" min="300" max="1800" step="50" value="900">
+      </div>
+      <div class="field">
+        <label for="mplanet">มวลของดาวเคราะห์ <b id="mplanetV">8</b></label>
+        <input type="range" id="mplanet" min="1" max="40" step="1" value="8">
+      </div>
+      <div class="field">
+        <label for="dist">ระยะห่างเริ่มต้นจากดวงอาทิตย์ <b id="distV">160</b></label>
+        <input type="range" id="dist" min="70" max="260" step="5" value="160">
+      </div>
+      <div class="field">
+        <label for="vel">ความเร็วเริ่มต้นของดาวเคราะห์ <b id="velV">120</b></label>
+        <input type="range" id="vel" min="0" max="320" step="5" value="120">
+        <p id="velHint" class="hint"></p>
+      </div>
+      <div class="field">
+        <label for="speed">ความเร็วในการเล่น Simulation <b id="speedV">1.00×</b></label>
+        <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1">
+      </div>
+      <div class="buttons">
+        <button id="playBtn">▶ เล่น</button>
+        <button id="resetBtn" class="ghost">⟲ รีเซ็ต</button>
+      </div>
+    </aside>
+  </div>
+  <p class="callout">"แรงโน้มถ่วงดึงดาวเคราะห์เข้าหาดวงอาทิตย์ ขณะที่ความเร็วของดาวเคราะห์ทำให้มันเคลื่อนที่ไปข้างหน้า การรวมกันของแรงทั้งสองทำให้เกิดการโคจร"</p>
+</div>
+<script>
+(function(){
+  const canvas=document.getElementById('sim');
+  const ctx=canvas.getContext('2d');
+  let W=600,H=600;
+  const G=4000;
+  const els={
+    msun:document.getElementById('msun'), mplanet:document.getElementById('mplanet'),
+    dist:document.getElementById('dist'), vel:document.getElementById('vel'), speed:document.getElementById('speed'),
+    msunV:document.getElementById('msunV'), mplanetV:document.getElementById('mplanetV'),
+    distV:document.getElementById('distV'), velV:document.getElementById('velV'), speedV:document.getElementById('speedV'),
+    hint:document.getElementById('velHint'), playBtn:document.getElementById('playBtn'), resetBtn:document.getElementById('resetBtn'),
+    status:document.getElementById('status'), hudDist:document.getElementById('hudDist'),
+    hudSpeed:document.getElementById('hudSpeed'), hudForce:document.getElementById('hudForce'),
+    zoomIn:document.getElementById('zoomIn'), zoomOut:document.getElementById('zoomOut'), zoomReset:document.getElementById('zoomReset')
+  };
+
+  let state={}, playing=false, outcome='orbit', trail=[], frameCount=0, t=0, lastTime=null;
+  let camera={x:0,y:0,zoom:1}, dragging=false, lastPX=0, lastPY=0;
+  function baseScale(){ return W/600; }
+  function toScreenX(wx){ return W/2+(wx-camera.x)*baseScale()*camera.zoom; }
+  function toScreenY(wy){ return H/2+(wy-camera.y)*baseScale()*camera.zoom; }
+  function setZoom(nz,ax,ay){
+    nz=Math.max(0.4,Math.min(5,nz));
+    if(ax===undefined){ax=W/2;ay=H/2;}
+    const k0=baseScale()*camera.zoom;
+    const wx=camera.x+(ax-W/2)/k0, wy=camera.y+(ay-H/2)/k0;
+    camera.zoom=nz;
+    const k1=baseScale()*camera.zoom;
+    camera.x=wx-(ax-W/2)/k1; camera.y=wy-(ay-H/2)/k1;
+  }
+  const stars=[];
+  for(let i=0;i<130;i++) stars.push({x:Math.random(),y:Math.random(),r:0.5+Math.random()*1.6,base:0.3+Math.random()*0.6,sp:0.4+Math.random()*1.6,ph:Math.random()*6.28});
+
+  function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    const size=Math.max(200,Math.min(rect.width,600));
+    W=size; H=size;
+    const dpr=window.devicePixelRatio||1;
+    canvas.width=W*dpr; canvas.height=H*dpr;
+    canvas.style.width=W+'px'; canvas.style.height
